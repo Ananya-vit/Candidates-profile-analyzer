@@ -103,7 +103,13 @@ def write_submission(
     # Re-sort by rounded score descending, then candidate_id ascending for ties
     results_sorted = sorted(results, key=lambda x: (-round(x[1], 4), x[0]))
 
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
+    # Ensure output directory exists
+    out_path = Path(output_path)
+    out_dir = out_path.parent
+    if str(out_dir) and not out_dir.exists():
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         # Header
         writer.writerow(["candidate_id", "rank", "score", "reasoning"])
@@ -116,11 +122,12 @@ def write_submission(
     print(f"Submission written with {len(results_sorted)} candidates.")
 
 
-def validate_submission(filepath: str) -> List[str]:
+def validate_submission(filepath: str, expected_count: int = 100) -> List[str]:
     """Validate submission format.
 
     Args:
         filepath: Path to submission CSV.
+        expected_count: Expected number of data rows in the submission.
 
     Returns:
         List of error messages (empty if valid).
@@ -148,8 +155,10 @@ def validate_submission(filepath: str) -> List[str]:
             rows = list(reader)
             non_empty_rows = [r for r in rows if any(cell.strip() for cell in r)]
 
-            if len(non_empty_rows) != 100:
-                errors.append(f"Expected 100 data rows, got {len(non_empty_rows)}.")
+            if len(non_empty_rows) != expected_count:
+                errors.append(
+                    f"Expected {expected_count} data rows, got {len(non_empty_rows)}."
+                )
 
             seen_ids = set()
             seen_ranks = set()
@@ -172,8 +181,10 @@ def validate_submission(filepath: str) -> List[str]:
                 # Validate rank
                 try:
                     rank = int(rank_str)
-                    if rank < 1 or rank > 100:
-                        errors.append(f"Row {row_num}: Rank {rank} out of range 1-100.")
+                    if rank < 1 or rank > expected_count:
+                        errors.append(
+                            f"Row {row_num}: Rank {rank} out of range 1-{expected_count}."
+                        )
                     if rank in seen_ranks:
                         errors.append(f"Row {row_num}: Duplicate rank {rank}.")
                     seen_ranks.add(rank)
@@ -238,7 +249,7 @@ def main():
     # Validate if requested
     if args.validate:
         print("\nValidating submission...")
-        errors = validate_submission(args.out)
+        errors = validate_submission(args.out, expected_count=len(results))
         if errors:
             print(f"Validation failed with {len(errors)} errors:")
             for error in errors:
