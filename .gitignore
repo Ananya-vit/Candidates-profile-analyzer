@@ -1,3 +1,4 @@
 plan.md
 data/candidates.jsonl
 output/
+.venv/

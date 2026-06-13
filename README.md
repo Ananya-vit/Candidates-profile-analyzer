@@ -42,6 +42,10 @@ All scores are multiplied by a **behavioral modifier** (0.3-1.0) based on:
 
 ### Prerequisites
 
+```todo
+add candidates.jsonl file in ./data folder
+```
+
 ```bash
 pip install -r requirements.txt
 ```
